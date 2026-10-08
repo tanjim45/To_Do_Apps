@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:todo_app/models/task_models.dart';
 
 class AddTaskPage extends StatefulWidget {
   const AddTaskPage({super.key});
@@ -14,6 +14,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
 
+  // Date select
   Future<void> selectDate() async {
     final DateTime? date = await showDatePicker(
       context: context,
@@ -29,6 +30,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
     }
   }
 
+  // Time select
   Future<void> selectTime() async {
     final TimeOfDay? time = await showTimePicker(
       context: context,
@@ -42,7 +44,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
     }
   }
 
+  // Save Task
   void saveTask() {
+    // Task name check
     if (taskController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -52,6 +56,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
       return;
     }
 
+    // Date check
     if (selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -61,6 +66,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
       return;
     }
 
+    // Time check
     if (selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -70,12 +76,23 @@ class _AddTaskPageState extends State<AddTaskPage> {
       return;
     }
 
-    final task = {
-      'title': taskController.text.trim(),
-      'date': selectedDate,
-      'time': selectedTime,
-    };
+    // Date + Time একসাথে করা
+    final DateTime taskDateTime = DateTime(
+      selectedDate!.year,
+      selectedDate!.month,
+      selectedDate!.day,
+      selectedTime!.hour,
+      selectedTime!.minute,
+    );
 
+    // TaskModel তৈরি
+    final TaskModel task = TaskModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: taskController.text.trim(),
+      dateTime: taskDateTime,
+    );
+
+    // Home Page-এ Task পাঠানো
     Navigator.pop(context, task);
   }
 
@@ -94,6 +111,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -137,7 +155,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     label: Text(
                       selectedDate == null
                           ? 'Select Date'
-                          : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                          : '${selectedDate!.day}/'
+                            '${selectedDate!.month}/'
+                            '${selectedDate!.year}',
                     ),
                   ),
                 ),
@@ -178,4 +198,3 @@ class _AddTaskPageState extends State<AddTaskPage> {
     );
   }
 }
-

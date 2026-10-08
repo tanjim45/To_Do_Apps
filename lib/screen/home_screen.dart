@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:todo_app/models/task_models.dart';
 import 'add_task_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -9,9 +10,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final List<String> tasks = [];
+  final List<TaskModel> tasks = [];
 
-  // Add Task Page open 
+  // Add Task Page open করবে
   Future<void> addTask() async {
     final task = await Navigator.push(
       context,
@@ -20,10 +21,10 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    // Add Task Page থেকে task ফেরত এলে
-    if (task != null) {
+    // Add Task Page থেকে TaskModel ফেরত এলে
+    if (task != null && task is TaskModel) {
       setState(() {
-        tasks.add(task['title']);
+        tasks.add(task);
       });
     }
   }
@@ -55,13 +56,26 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.all(12),
               itemCount: tasks.length,
               itemBuilder: (context, index) {
+                final task = tasks[index];
+
                 return Card(
                   child: ListTile(
-                    leading: const Icon(
-                      Icons.check_circle_outline,
-                      color: Colors.blue,
+                    leading: Icon(
+                      task.isCompleted
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      color: task.isCompleted
+                          ? Colors.green
+                          : Colors.blue,
                     ),
-                    title: Text(tasks[index]),
+                    title: Text(task.title),
+                    subtitle: Text(
+                      '${task.dateTime.day}/'
+                      '${task.dateTime.month}/'
+                      '${task.dateTime.year} '
+                      '${task.dateTime.hour}:'
+                      '${task.dateTime.minute.toString().padLeft(2, '0')}',
+                    ),
                   ),
                 );
               },
