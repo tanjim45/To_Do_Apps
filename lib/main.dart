@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/screen/home_screen.dart';
+import 'package:todo_app/sevice/notification_service.dart';
 import 'package:todo_app/sevice/task_database.dart';
 
 
@@ -7,6 +8,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await TaskDatabase.init();
+  await NotificationService.init();
 
   runApp(const TodoApp());
 }

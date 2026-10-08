@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/models/task_models.dart';
+import 'package:todo_app/sevice/notification_service.dart';
 import 'package:todo_app/sevice/task_database.dart';
 import 'add_task_page.dart';
 
@@ -38,28 +39,53 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (task != null && task is TaskModel) {
-      // Database-এ save
       await TaskDatabase.addTask(task);
 
-      // Screen update
       setState(() {
         tasks.add(task);
       });
     }
   }
 
+  // Task Done / Undone
+  Future<void> toggleTask(TaskModel task) async {
+    setState(() {
+      task.isCompleted = !task.isCompleted;
+    });
+
+    await TaskDatabase.updateTask(task);
+  }
+
+  // Task Delete
+  Future<void> deleteTask(TaskModel task) async {
+    await TaskDatabase.deleteTask(task.id);
+
+    setState(() {
+      tasks.remove(task);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'My To-Do',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
+     appBar: AppBar(
+  title: const Text(
+    'My To-Do',
+    style: TextStyle(
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  centerTitle: true,
+  actions: [
+    IconButton(
+      onPressed: () async {
+        await NotificationService.showTestNotification();
+      },
+      icon: const Icon(Icons.notifications),
+      tooltip: 'Test Notification',
+    ),
+  ],
+),
 
       body: tasks.isEmpty
           ? const Center(
@@ -78,19 +104,27 @@ class _HomePageState extends State<HomePage> {
                 final task = tasks[index];
 
                 return Card(
+                  margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
-                    leading: Icon(
-                      task.isCompleted
-                          ? Icons.check_circle
-                          : Icons.circle_outlined,
-                      color: task.isCompleted
-                          ? Colors.green
-                          : Colors.blue,
+                    // Done button
+                    leading: IconButton(
+                      onPressed: () => toggleTask(task),
+                      icon: Icon(
+                        task.isCompleted
+                            ? Icons.check_circle
+                            : Icons.circle_outlined,
+                        color: task.isCompleted
+                            ? Colors.green
+                            : Colors.blue,
+                        size: 30,
+                      ),
                     ),
 
+                    // Task information
                     title: Text(
                       task.title,
                       style: TextStyle(
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         decoration: task.isCompleted
                             ? TextDecoration.lineThrough
@@ -104,6 +138,15 @@ class _HomePageState extends State<HomePage> {
                       '${task.dateTime.year} '
                       '${task.dateTime.hour}:'
                       '${task.dateTime.minute.toString().padLeft(2, '0')}',
+                    ),
+
+                    // Delete button
+                    trailing: IconButton(
+                      onPressed: () => deleteTask(task),
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.red,
+                      ),
                     ),
                   ),
                 );
