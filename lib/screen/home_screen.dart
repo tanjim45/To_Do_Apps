@@ -31,21 +31,34 @@ class _HomePageState extends State<HomePage> {
 
   // নতুন Task add
   Future<void> addTask() async {
-    final task = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AddTaskPage(),
-      ),
-    );
+  final task = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const AddTaskPage(),
+    ),
+  );
 
-    if (task != null && task is TaskModel) {
-      await TaskDatabase.addTask(task);
+  if (task != null && task is TaskModel) {
+    // প্রথমে Database-এ save
+    await TaskDatabase.addTask(task);
 
-      setState(() {
-        tasks.add(task);
-      });
+    // তারপর সঙ্গে সঙ্গে Home Page-এ show
+    setState(() {
+      tasks.add(task);
+    });
+
+    // তারপর Notification schedule
+    try {
+      await NotificationService.scheduleTaskNotification(
+        id: int.parse(task.id),
+        title: task.title,
+        scheduledDateTime: task.dateTime,
+      );
+    } catch (e) {
+      debugPrint('Notification scheduling error: $e');
     }
   }
+}
 
   // Task Done / Undone
   Future<void> toggleTask(TaskModel task) async {
@@ -68,33 +81,28 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     appBar: AppBar(
-  title: const Text(
-    'My To-Do',
-    style: TextStyle(
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-  centerTitle: true,
-  actions: [
-    IconButton(
-      onPressed: () async {
-        await NotificationService.showTestNotification();
-      },
-      icon: const Icon(Icons.notifications),
-      tooltip: 'Test Notification',
-    ),
-  ],
-),
+      appBar: AppBar(
+        title: const Text(
+          'My To-Do',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await NotificationService.showTestNotification();
+            },
+            icon: const Icon(Icons.notifications),
+            tooltip: 'Test Notification',
+          ),
+        ],
+      ),
 
       body: tasks.isEmpty
           ? const Center(
               child: Text(
                 'No tasks yet',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 20, color: Colors.grey),
               ),
             )
           : ListView.builder(
@@ -106,21 +114,17 @@ class _HomePageState extends State<HomePage> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
-                    // Done button
                     leading: IconButton(
                       onPressed: () => toggleTask(task),
                       icon: Icon(
                         task.isCompleted
                             ? Icons.check_circle
                             : Icons.circle_outlined,
-                        color: task.isCompleted
-                            ? Colors.green
-                            : Colors.blue,
+                        color: task.isCompleted ? Colors.green : Colors.blue,
                         size: 30,
                       ),
                     ),
 
-                    // Task information
                     title: Text(
                       task.title,
                       style: TextStyle(
@@ -140,13 +144,9 @@ class _HomePageState extends State<HomePage> {
                       '${task.dateTime.minute.toString().padLeft(2, '0')}',
                     ),
 
-                    // Delete button
                     trailing: IconButton(
                       onPressed: () => deleteTask(task),
-                      icon: const Icon(
-                        Icons.delete,
-                        color: Colors.red,
-                      ),
+                      icon: const Icon(Icons.delete, color: Colors.red),
                     ),
                   ),
                 );
