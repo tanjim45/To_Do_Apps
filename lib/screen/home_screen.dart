@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/models/task_models.dart';
+import 'package:todo_app/sevice/task_database.dart';
 import 'add_task_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -10,9 +11,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final List<TaskModel> tasks = [];
+  List<TaskModel> tasks = [];
 
-  // Add Task Page open করবে
+  @override
+  void initState() {
+    super.initState();
+    loadTasks();
+  }
+
+  // Database থেকে Task load
+  void loadTasks() {
+    final savedTasks = TaskDatabase.getTasks();
+
+    setState(() {
+      tasks = savedTasks;
+    });
+  }
+
+  // নতুন Task add
   Future<void> addTask() async {
     final task = await Navigator.push(
       context,
@@ -21,8 +37,11 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    // Add Task Page থেকে TaskModel ফেরত এলে
     if (task != null && task is TaskModel) {
+      // Database-এ save
+      await TaskDatabase.addTask(task);
+
+      // Screen update
       setState(() {
         tasks.add(task);
       });
@@ -68,7 +87,17 @@ class _HomePageState extends State<HomePage> {
                           ? Colors.green
                           : Colors.blue,
                     ),
-                    title: Text(task.title),
+
+                    title: Text(
+                      task.title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        decoration: task.isCompleted
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                      ),
+                    ),
+
                     subtitle: Text(
                       '${task.dateTime.day}/'
                       '${task.dateTime.month}/'

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/screen/home_screen.dart';
+import 'package:todo_app/sevice/task_database.dart';
 
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await TaskDatabase.init();
+
   runApp(const TodoApp());
 }
 
@@ -24,3 +29,4 @@ class TodoApp extends StatelessWidget {
     );
   }
 }
+
