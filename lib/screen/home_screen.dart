@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage> {
     loadTasks();
   }
 
-  // Database থেকে Task load
+  
   void loadTasks() {
     final savedTasks = TaskDatabase.getTasks();
 
@@ -29,7 +29,8 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // নতুন Task add
+  
+  
   Future<void> addTask() async {
   final task = await Navigator.push(
     context,
