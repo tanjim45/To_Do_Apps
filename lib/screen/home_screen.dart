@@ -20,7 +20,6 @@ class _HomePageState extends State<HomePage> {
     loadTasks();
   }
 
-  
   void loadTasks() {
     final savedTasks = TaskDatabase.getTasks();
 
@@ -29,37 +28,33 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  
-  
   Future<void> addTask() async {
-  final task = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const AddTaskPage(),
-    ),
-  );
+    final task = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddTaskPage()),
+    );
 
-  if (task != null && task is TaskModel) {
-    // প্রথমে Database-এ save
-    await TaskDatabase.addTask(task);
+    if (task != null && task is TaskModel) {
+      // প্রথমে Database-এ save
+      await TaskDatabase.addTask(task);
 
-    // তারপর সঙ্গে সঙ্গে Home Page-এ show
-    setState(() {
-      tasks.add(task);
-    });
+      // তারপর সঙ্গে সঙ্গে Home Page-এ show
+      setState(() {
+        tasks.add(task);
+      });
 
-    // তারপর Notification schedule
-    try {
-      await NotificationService.scheduleTaskNotification(
-        id: int.parse(task.id),
-        title: task.title,
-        scheduledDateTime: task.dateTime,
-      );
-    } catch (e) {
-      debugPrint('Notification scheduling error: $e');
+      // তারপর Notification schedule
+      try {
+        await NotificationService.scheduleTaskNotification(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: task.title,
+          scheduledDateTime: task.dateTime,
+        );
+      } catch (e) {
+        debugPrint('Notification scheduling error: $e');
+      }
     }
   }
-}
 
   // Task Done / Undone
   Future<void> toggleTask(TaskModel task) async {
