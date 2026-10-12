@@ -10,9 +10,7 @@ class NotificationService {
 
   static const String offActionId = 'OFF_ACTION';
 
-  // ==============================
   // INITIALIZE
-  // ==============================
 
   static Future<void> init() async {
     tz.initializeTimeZones();
@@ -44,9 +42,7 @@ class NotificationService {
         ?.requestExactAlarmsPermission();
   }
 
-  // ==============================
   // NOTIFICATION DETAILS
-  // ==============================
 
   static AndroidNotificationDetails _androidDetails() {
     return const AndroidNotificationDetails(
@@ -75,9 +71,7 @@ class NotificationService {
     );
   }
 
-  // ==============================
   // OFF BUTTON
-  // ==============================
 
   static Future<void> _onNotificationResponse(
     NotificationResponse response,
@@ -95,19 +89,19 @@ class NotificationService {
         final notificationId = int.tryParse(idString);
 
         if (notificationId != null) {
-          // সব ৩টা reminder বন্ধ করবে
+          //  reminder off
           await stopReminder(notificationId);
 
-          // সব task বের করবে
+          //  task 
           final tasks = TaskDatabase.getTasks();
 
-          // যে task-এর notification সেটা খুঁজবে
+          // যে task- notification 
           for (final task in tasks) {
             final taskNotificationId =
                 int.parse(task.id) % 2147483647;
 
             if (taskNotificationId == notificationId) {
-              // Task Done করে দিচ্ছি
+              // Task Done 
               task.isCompleted = true;
 
               await TaskDatabase.updateTask(task);
@@ -122,13 +116,11 @@ class NotificationService {
         }
       }
 
-      debugPrint('🛑 OFF button pressed');
+      debugPrint(' OFF button pressed');
     }
   }
 
-  // ==============================
   // TEST NOTIFICATION
-  // ==============================
 
   static Future<void> showTestNotification() async {
     await _notifications.show(
@@ -139,12 +131,10 @@ class NotificationService {
       payload: 'task_1',
     );
 
-    debugPrint('✅ Test notification shown');
+    debugPrint('Test notification shown');
   }
 
-  // ==============================
   // SCHEDULE 3 NOTIFICATIONS
-  // ==============================
 
   static Future<void> scheduleTaskNotification({
     required int id,
@@ -170,15 +160,13 @@ class NotificationService {
       return;
     }
 
-    // ৩টা আলাদা notification ID
+    // 3 seperate notification ID
     final id1 = id;
     final id2 = id + 1;
     final id3 = id + 2;
 
-    // ==============================
     // 1st notification
     // Scheduled time
-    // ==============================
 
     await _notifications.zonedSchedule(
       id: id1,
@@ -190,10 +178,8 @@ class NotificationService {
       payload: 'task_$id',
     );
 
-    // ==============================
     // 2nd notification
     // 1 minute later
-    // ==============================
 
     final secondTime = firstTime.add(
       const Duration(minutes: 1),
@@ -209,10 +195,8 @@ class NotificationService {
       payload: 'task_$id',
     );
 
-    // ==============================
     // 3rd notification
     // 2 minutes later
-    // ==============================
 
     final thirdTime = firstTime.add(
       const Duration(minutes: 2),
@@ -228,15 +212,13 @@ class NotificationService {
       payload: 'task_$id',
     );
 
-    debugPrint('✅ 3 notifications scheduled!');
+    debugPrint(' 3 notifications scheduled!');
     debugPrint('1st: $firstTime');
     debugPrint('2nd: $secondTime');
     debugPrint('3rd: $thirdTime');
   }
 
-  // ==============================
-  // STOP REMINDER
-  // ==============================
+  // STOP REMINDER  
 
   static Future<void> stopReminder(int id) async {
     await _notifications.cancel(
@@ -251,12 +233,10 @@ class NotificationService {
       id: id + 2,
     );
 
-    debugPrint('🛑 All 3 reminders stopped! ID: $id');
+    debugPrint(' All 3 reminders stopped! ID: $id');
   }
 
-  // ==============================
   // CANCEL TASK NOTIFICATIONS
-  // ==============================
 
   static Future<void> cancelNotification(int id) async {
     await _notifications.cancel(
@@ -272,17 +252,15 @@ class NotificationService {
     );
 
     debugPrint(
-      '❌ All task notifications cancelled! ID: $id',
+      ' All task notifications cancelled! ID: $id',
     );
   }
 
-  // ==============================
   // CANCEL ALL
-  // ==============================
 
   static Future<void> cancelAllNotifications() async {
     await _notifications.cancelAll();
 
-    debugPrint('❌ All notifications cancelled!');
+    debugPrint(' All notifications cancelled!');
   }
 }

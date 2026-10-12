@@ -11,22 +11,18 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   List<TaskModel> tasks = [];
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     loadTasks();
   }
 
-  // Stable notification ID for each task.
-  // It must fit within the 32-bit integer range.
-  int notificationId(TaskModel task) {
-    return int.parse(task.id) % 2147483647;
-  }
+  // LOAD TASKS
 
-  // Load tasks from Hive database.
   void loadTasks() {
     final savedTasks = TaskDatabase.getTasks();
 
@@ -37,28 +33,43 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Add a new task.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      loadTasks();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // NOTIFICATION ID
+
+  int notificationId(TaskModel task) {
+    return int.parse(task.id) % 2147483647;
+  }
+
+  // ADD TASK
+
   Future<void> addTask() async {
     final result = await Navigator.push<TaskModel>(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AddTaskPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const AddTaskPage()),
     );
 
     if (result == null) return;
 
-    // Save task to database.
     await TaskDatabase.addTask(result);
 
-    // Update Home Page.
     if (!mounted) return;
 
     setState(() {
       tasks.add(result);
     });
 
-    // Schedule notification.
     try {
       await NotificationService.scheduleTaskNotification(
         id: notificationId(result),
@@ -69,24 +80,21 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Task saved and reminder scheduled!'),
-        ),
+        const SnackBar(content: Text('Task saved and 3 reminders scheduled!')),
       );
     } catch (e) {
       debugPrint('Notification scheduling error: $e');
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Notification error: $e'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Notification error: $e')));
     }
   }
 
-  // Mark task as Done or Pending.
+  // COMPLETE / UNCOMPLETE TASK
+
   Future<void> toggleTask(TaskModel task) async {
     final previousStatus = task.isCompleted;
 
@@ -97,13 +105,8 @@ class _HomePageState extends State<HomePage> {
     try {
       await TaskDatabase.updateTask(task);
 
-      // If completed, cancel its scheduled notification.
       if (task.isCompleted) {
-        await NotificationService.cancelNotification(
-          notificationId(task),
-        );
-      } else if (!previousStatus) {
-        // No action needed.
+        await NotificationService.cancelNotification(notificationId(task));
       }
     } catch (e) {
       debugPrint('Task update error: $e');
@@ -114,20 +117,17 @@ class _HomePageState extends State<HomePage> {
         task.isCompleted = previousStatus;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not update task.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not update task.')));
     }
   }
 
-  // Delete task and cancel its notification.
+  // DELETE TASK
+
   Future<void> deleteTask(TaskModel task) async {
     try {
-      await NotificationService.cancelNotification(
-        notificationId(task),
-      );
+      await NotificationService.cancelNotification(notificationId(task));
 
       await TaskDatabase.deleteTask(task.id);
 
@@ -138,24 +138,21 @@ class _HomePageState extends State<HomePage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Task deleted successfully.'),
-        ),
+        const SnackBar(content: Text('Task deleted successfully.')),
       );
     } catch (e) {
       debugPrint('Delete task error: $e');
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not delete task.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not delete task.')));
     }
   }
 
-  // Display a list of tasks.
+  // TASK LIST
+
   Widget buildTaskList(List<TaskModel> taskList) {
     if (taskList.isEmpty) {
       return const Padding(
@@ -163,10 +160,7 @@ class _HomePageState extends State<HomePage> {
         child: Center(
           child: Text(
             'No tasks here',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 15,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 15),
           ),
         ),
       );
@@ -189,12 +183,8 @@ class _HomePageState extends State<HomePage> {
             leading: IconButton(
               onPressed: () => toggleTask(task),
               icon: Icon(
-                task.isCompleted
-                    ? Icons.check_circle
-                    : Icons.circle_outlined,
-                color: task.isCompleted
-                    ? Colors.green
-                    : Colors.blue,
+                task.isCompleted ? Icons.check_circle : Icons.circle_outlined,
+                color: task.isCompleted ? Colors.green : Colors.blue,
                 size: 30,
               ),
             ),
@@ -220,10 +210,7 @@ class _HomePageState extends State<HomePage> {
             ),
             trailing: IconButton(
               onPressed: () => deleteTask(task),
-              icon: const Icon(
-                Icons.delete_outline,
-                color: Colors.red,
-              ),
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
               tooltip: 'Delete task',
             ),
           ),
@@ -232,25 +219,21 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // BUILD
+
   @override
   Widget build(BuildContext context) {
-    final pendingTasks = tasks
-        .where((task) => !task.isCompleted)
-        .toList()
+    final pendingTasks = tasks.where((task) => !task.isCompleted).toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
-    final completedTasks = tasks
-        .where((task) => task.isCompleted)
-        .toList()
+    final completedTasks = tasks.where((task) => task.isCompleted).toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'My To-Do',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
@@ -268,23 +251,17 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
 
+      // BODY
       body: tasks.isEmpty
           ? const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.task_alt,
-                    size: 75,
-                    color: Colors.grey,
-                  ),
+                  Icon(Icons.task_alt, size: 75, color: Colors.grey),
                   SizedBox(height: 12),
                   Text(
                     'No tasks yet',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 20, color: Colors.grey),
                   ),
                   SizedBox(height: 5),
                   Text('Tap + to create your first task'),
@@ -294,12 +271,10 @@ class _HomePageState extends State<HomePage> {
           : ListView(
               padding: const EdgeInsets.all(12),
               children: [
+                // PENDING
                 Row(
                   children: [
-                    const Icon(
-                      Icons.pending_actions,
-                      color: Colors.blue,
-                    ),
+                    const Icon(Icons.pending_actions, color: Colors.blue),
                     const SizedBox(width: 8),
                     Text(
                       'Pending (${pendingTasks.length})',
@@ -310,18 +285,19 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 10),
 
                 buildTaskList(pendingTasks),
 
                 const SizedBox(height: 20),
 
+
+
+                // DONE
                 Row(
                   children: [
-                    const Icon(
-                      Icons.task_alt,
-                      color: Colors.green,
-                    ),
+                    const Icon(Icons.task_alt, color: Colors.green),
                     const SizedBox(width: 8),
                     Text(
                       'Done (${completedTasks.length})',
@@ -332,12 +308,15 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 10),
 
                 buildTaskList(completedTasks),
               ],
             ),
 
+
+      // ADD BUTTON
       floatingActionButton: FloatingActionButton.extended(
         onPressed: addTask,
         icon: const Icon(Icons.add),
